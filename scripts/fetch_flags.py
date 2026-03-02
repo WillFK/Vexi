@@ -11,9 +11,6 @@ def fetch_flag(country_code):
             f.write(respose.content)
         print(f"Flag for {country_code} saved to {output_path}")
 
-
-    
-
 def fetch_countries():
     with open("../data/countries.json", "r", encoding="utf-8") as f:
         return json.load(f)
