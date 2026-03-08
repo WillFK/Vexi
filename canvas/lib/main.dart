@@ -3,10 +3,11 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'models/country.dart';
 
 const RANDOM_COUNRTY_URL = 'https://raw.githubusercontent.com/WillFK/Vexi/refs/heads/main/data/countries.json';
 
-Future<List<Map<String, dynamic>>> fetchCountriesRaw() async {
+Future<List<Country>> fetchCountries() async {
   final uri = Uri.parse(RANDOM_COUNRTY_URL);
   final res = await http.get(
     uri,
@@ -21,11 +22,13 @@ Future<List<Map<String, dynamic>>> fetchCountriesRaw() async {
 
   final decoded = jsonDecode(res.body) as Map<String, dynamic>;
   final list = decoded['countries'] as List<dynamic>;
-  return list.cast<Map<String, dynamic>>();
+  return list
+    .map((item) => Country.fromJson(item as Map<String, dynamic>))
+    .toList();
 }
 
-final countriesProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
-  return fetchCountriesRaw();
+final countriesProvider = FutureProvider<List<Country>>((ref) async {
+  return fetchCountries();
 });
 
 void main() {
@@ -50,6 +53,10 @@ class CountriesPage extends ConsumerWidget {
 
   const CountriesPage({super.key});
 
+  String _extractFullName(Country country) {
+    return country.fullNameEn == country.fullNameLocal ?
+      country.fullNameLocal : '${country.fullNameLocal} (${country.fullNameEn})';
+  }
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final countries = ref.watch(countriesProvider);
@@ -63,15 +70,9 @@ class CountriesPage extends ConsumerWidget {
                 separatorBuilder: (_, __) => const Divider(height: 1),
                 itemBuilder: (context, i) {
                   final c = items[i];
-
-                  // Adapt these keys to your JSON
-                  final code = (c['code'] ?? '').toString();
-                  final fullNameEn = (c['full_name_en'] ?? '').toString();
-                  final shortNameEn = (c['short_name_en'] ?? '').toString();
-
                   return ListTile(
-                    title: Text(fullNameEn.isEmpty ? shortNameEn : fullNameEn),
-                    subtitle: Text(code),
+                    title: Text(c.shortNameEn),
+                    subtitle: Text(_extractFullName(c)),
                   );
                 }
             );
